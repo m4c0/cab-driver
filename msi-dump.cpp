@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <locale>
+#include <span>
 #include <string_view>
 #include <vector>
 
@@ -29,6 +30,7 @@ struct header {
 };
 static_assert(sizeof(header) == 512);
 
+using dirid_t = int32_t;
 enum dir_entry_type : uint8_t {
   empty = 0,
   user_storage = 1,
@@ -42,9 +44,9 @@ struct dir_entry {
   uint16_t name_size; // in bytes + NIL (1b)
   dir_entry_type type;
   enum : uint8_t { red, black } color;
-  int32_t dirid_left;
-  int32_t dirid_right;
-  int32_t dirid_root;
+  dirid_t dirid_left;
+  dirid_t dirid_right;
+  dirid_t dirid_root;
   std::array<uint8_t, 16> uid;
   uint32_t user_flags;
   std::array<uint8_t, 8> ts_create; // u64 can't be aligned here
@@ -76,16 +78,32 @@ inline std::vector<T> read(std::ifstream &f, int32_t secid, uint32_t sec_size) {
   return std::move(buffer);
 }
 
-inline std::string to_str(const char16_t *chars, unsigned char_count) {
-  std::string res;
-  res.resize(char_count);
-  for (unsigned i = 0; i < char_count; i++) {
-    auto c = chars[i];
-    if ((unsigned)c > 0xFFU)
-      throw std::runtime_error("Non-ASCII in U16 string");
-    res[i] = (int)c;
+inline void dump_str(const char16_t *chars, unsigned char_count) {
+  for (auto c : std::span{chars, char_count}) {
+    uint8_t uc = (uint8_t)c;
+    if (uc == c) {
+      std::cout << uc;
+    } else {
+      std::cout << '?';
+    }
   }
-  return res;
+}
+
+void dump_tree(auto &dir_entries, dirid_t dirid, unsigned depth = 10,
+               const std::string &ind = "") {
+  if (dirid < 0 || depth <= 0)
+    return;
+
+  const auto &b = dir_entries[dirid];
+  const auto name_len = (b.name_size - 1) / 2;
+  std::cout << ind << "[";
+  dump_str(b.name.data(), name_len);
+  std::cout << "] " << (int)b.type << " " << b.dirid_left << " "
+            << b.dirid_right << " " << b.dirid_root << " " << b.secid_first
+            << " " << b.stream_size << "\n";
+  dump_tree(dir_entries, b.dirid_left, depth - 1, ind + " ");
+  dump_tree(dir_entries, b.dirid_right, depth - 1, ind + " ");
+  dump_tree(dir_entries, b.dirid_root, depth - 1, ind + " ");
 }
 
 void try_main(int argc, char **argv) {
@@ -112,6 +130,7 @@ void try_main(int argc, char **argv) {
 
   const auto sec_size = 1 << h.pot_sec_size;
   const auto mini_sec_size = 1 << h.pot_minisec_size;
+  std::cerr << "Sector size: " << sec_size << "\n";
 
   if (h.secid_msat != -2)
     throw std::runtime_error("Extended MSAT not supported");
@@ -124,12 +143,8 @@ void try_main(int argc, char **argv) {
 
   // Read dir from SAT
 
-  const auto root_dir = read<dir_entry>(f, sat[h.secid_dir], sec_size);
-
-  const auto &b = root_dir[0];
-  const auto name_len = (b.name_size - 1) / 2;
-  std::cout << "[" << to_str(b.name.data(), name_len) << "] " << (int)b.type
-            << "\n";
+  const auto root_dir = read<dir_entry>(f, h.secid_dir, sec_size);
+  dump_tree(root_dir, 0);
 }
 
 int main(int argc, char **argv) { try_main(argc, argv); }
