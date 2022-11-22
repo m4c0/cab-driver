@@ -1,5 +1,6 @@
 #include <array>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <locale>
 #include <span>
@@ -57,26 +58,35 @@ struct dir_entry {
 };
 static_assert(sizeof(dir_entry) == 128);
 
-inline unsigned align_to(unsigned v, unsigned sec_size) {
-  unsigned ceil = (v / sec_size) + ((v % sec_size == 0) ? 0 : 1);
-  return ceil * sec_size;
-}
+class reader {
+  std::streambuf *m_f;
+  unsigned m_sec_size;
+  unsigned m_hdr_size;
 
-template <typename T>
-inline std::vector<T> read(std::ifstream &f, int32_t secid, uint32_t sec_size) {
-  const auto hdr_size = align_to(sizeof(header), sec_size);
+  static inline unsigned align_to(unsigned sec_size) {
+    unsigned v = sizeof(header);
+    unsigned ceil = (v / sec_size) + ((v % sec_size == 0) ? 0 : 1);
+    return ceil * sec_size;
+  }
 
-  auto offs = secid * sec_size + hdr_size;
-  if (offs != f.rdbuf()->pubseekpos(offs))
-    throw std::runtime_error("Failed to seek to sector");
+public:
+  reader(std::ifstream &f, unsigned sec_size)
+      : m_f{f.rdbuf()}, m_sec_size{sec_size}, m_hdr_size{align_to(sec_size)} {}
 
-  std::vector<T> buffer;
-  buffer.resize(sec_size / sizeof(T));
-  if (!f.rdbuf()->sgetn((char *)buffer.data(), sec_size))
-    throw std::runtime_error("Failed to read sector");
+  template <typename T> inline void read(int32_t secid, std::vector<T> &out) {
+    if (secid < 0)
+      return;
 
-  return std::move(buffer);
-}
+    auto offs = secid * m_sec_size + m_hdr_size;
+    if (offs != m_f->pubseekpos(offs))
+      throw std::runtime_error("Failed to seek to sector");
+
+    auto bsz = out.size();
+    out.resize(bsz + m_sec_size / sizeof(T));
+    if (!m_f->sgetn((char *)(out.data() + bsz), m_sec_size))
+      throw std::runtime_error("Failed to read sector");
+  }
+};
 
 inline void dump_str(const char16_t *chars, unsigned char_count) {
   for (auto c : std::span{chars, char_count}) {
@@ -84,7 +94,8 @@ inline void dump_str(const char16_t *chars, unsigned char_count) {
     if (uc == c) {
       std::cout << uc;
     } else {
-      std::cout << '?';
+      uint16_t sc = (uint16_t)c;
+      std::cout << std::setw(4) << std::hex << sc << std::dec;
     }
   }
 }
@@ -98,9 +109,9 @@ void dump_tree(auto &dir_entries, dirid_t dirid, unsigned depth = 10,
   const auto name_len = (b.name_size - 1) / 2;
   std::cout << ind << "[";
   dump_str(b.name.data(), name_len);
-  std::cout << "] " << (int)b.type << " " << b.dirid_left << " "
-            << b.dirid_right << " " << b.dirid_root << " " << b.secid_first
-            << " " << b.stream_size << "\n";
+  std::cout << "] t:" << (int)b.type << " " << b.dirid_left << " "
+            << b.dirid_right << " " << b.dirid_root
+            << " secid:" << b.secid_first << " sz:" << b.stream_size << "\n";
   dump_tree(dir_entries, b.dirid_left, depth - 1, ind + " ");
   dump_tree(dir_entries, b.dirid_right, depth - 1, ind + " ");
   dump_tree(dir_entries, b.dirid_root, depth - 1, ind + " ");
@@ -128,22 +139,33 @@ void try_main(int argc, char **argv) {
   if (h.byte_order != 0xFFFE)
     throw std::runtime_error("Invalid byte order");
 
-  const auto sec_size = 1 << h.pot_sec_size;
-  const auto mini_sec_size = 1 << h.pot_minisec_size;
+  const auto sec_size = 1U << h.pot_sec_size;
+  const auto mini_sec_size = 1U << h.pot_minisec_size;
   std::cerr << "Sector size: " << sec_size << "\n";
 
   if (h.secid_msat != -2)
     throw std::runtime_error("Extended MSAT not supported");
 
+  reader r{f, sec_size};
+
   // Build SAT from MSAT
 
-  const auto sat = read<int32_t>(f, h.first_sect_fats[0], sec_size);
+  std::vector<secid_t> sat;
+  for (auto s : h.first_sect_fats) {
+    r.read(s, sat);
+  }
   if (sat[0] != -3)
     throw std::runtime_error("Invalid SAT sector");
 
   // Read dir from SAT
 
-  const auto root_dir = read<dir_entry>(f, h.secid_dir, sec_size);
+  std::vector<dir_entry> root_dir;
+  auto secid = h.secid_dir;
+  while (secid >= 0) {
+    r.read(secid, root_dir);
+    secid = sat[secid];
+  }
+
   dump_tree(root_dir, 0);
 }
 
