@@ -92,26 +92,29 @@ public:
 class tree_node {
   const std::vector<dir_entry> &m_entries;
   dirid_t m_id;
+  unsigned m_depth;
 
 public:
-  tree_node(const std::vector<dir_entry> &e, dirid_t id = 0)
-      : m_entries{e}, m_id{id} {}
+  explicit tree_node(const std::vector<dir_entry> &e) : tree_node{e, 0, 0} {}
+  tree_node(const std::vector<dir_entry> &e, dirid_t id, unsigned depth)
+      : m_entries{e}, m_id{id}, m_depth{depth} {}
 
   [[nodiscard]] explicit operator bool() const { return m_id >= 0; }
 
+  [[nodiscard]] auto depth() const { return m_depth; }
   [[nodiscard]] const auto &entry() const { return m_entries[m_id]; }
 
   [[nodiscard]] tree_node left() const {
-    return {m_entries, entry().dirid_left};
+    return {m_entries, entry().dirid_left, m_depth + 1};
   };
   [[nodiscard]] tree_node right() const {
-    return {m_entries, entry().dirid_right};
+    return {m_entries, entry().dirid_right, m_depth + 1};
   };
   [[nodiscard]] tree_node root() const {
-    return {m_entries, entry().dirid_root};
+    return {m_entries, entry().dirid_root, m_depth + 1};
   };
 
-  [[nodiscard]] std::string name() {
+  [[nodiscard]] std::string name() const {
     std::stringstream res;
     const size_t name_len = (entry().name_size - 1) / 2;
     for (auto c : std::span{entry().name.data(), name_len}) {
@@ -127,24 +130,13 @@ public:
   }
 
   bool visit(auto fn) const {
-    return *this && fn(entry()) && left().visit(fn) && right().visit(fn) &&
+    if (!*this)
+      return true;
+
+    return left().visit(fn) && fn(this) && right().visit(fn) &&
            root().visit(fn);
   }
 };
-
-int dump_tree(tree_node n, unsigned depth = 10, const std::string &ind = "") {
-  if (!n || depth <= 0)
-    return 0;
-
-  const auto &b = n.entry();
-  const auto name_len = (b.name_size - 1) / 2;
-  std::cout << ind << "[" << n.name() << "] t:" << (int)b.type << " "
-            << b.dirid_left << " " << b.dirid_right << " " << b.dirid_root
-            << " secid:" << b.secid_first << " sz:" << b.stream_size << "\n";
-  return b.stream_size + dump_tree(n.left(), depth - 1, ind + " ") +
-         dump_tree(n.right(), depth - 1, ind + " ") +
-         dump_tree(n.root(), depth - 1, ind + " ");
-}
 
 void try_main(int argc, char **argv) {
   if (argc != 2)
@@ -196,11 +188,12 @@ void try_main(int argc, char **argv) {
   }
 
   tree_node tree{root_dir};
-
-  int sz = dump_tree(tree);
-  std::cout << "Total stream size: " << sz << "\n";
-
-  tree.visit([](auto e) { return true; });
+  tree.visit([](auto e) {
+    const auto &b = e->entry();
+    std::cout << e->name() << ":" << b.name_size << " secid:" << b.secid_first
+              << " sz:" << b.stream_size << "\n";
+    return true;
+  });
 }
 
 int main(int argc, char **argv) { try_main(argc, argv); }
