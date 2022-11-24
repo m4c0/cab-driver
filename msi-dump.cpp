@@ -94,16 +94,17 @@ inline void dump_str(const char16_t *chars, unsigned char_count) {
     if (uc == c) {
       std::cout << uc;
     } else {
-      uint16_t sc = (uint16_t)c;
-      std::cout << std::setw(4) << std::hex << sc << std::dec;
+      uint16_t sc = (uint16_t)((int)c & 0xFFFFU);
+      std::cout << std::setw(4) << std::hex << sc << " " << std::dec;
     }
   }
+  std::cout << ":" << char_count;
 }
 
-void dump_tree(auto &dir_entries, dirid_t dirid, unsigned depth = 10,
-               const std::string &ind = "") {
+int dump_tree(auto &dir_entries, dirid_t dirid, unsigned depth = 10,
+              const std::string &ind = "") {
   if (dirid < 0 || depth <= 0)
-    return;
+    return 0;
 
   const auto &b = dir_entries[dirid];
   const auto name_len = (b.name_size - 1) / 2;
@@ -112,9 +113,10 @@ void dump_tree(auto &dir_entries, dirid_t dirid, unsigned depth = 10,
   std::cout << "] t:" << (int)b.type << " " << b.dirid_left << " "
             << b.dirid_right << " " << b.dirid_root
             << " secid:" << b.secid_first << " sz:" << b.stream_size << "\n";
-  dump_tree(dir_entries, b.dirid_left, depth - 1, ind + " ");
-  dump_tree(dir_entries, b.dirid_right, depth - 1, ind + " ");
-  dump_tree(dir_entries, b.dirid_root, depth - 1, ind + " ");
+  return b.stream_size +
+         dump_tree(dir_entries, b.dirid_left, depth - 1, ind + " ") +
+         dump_tree(dir_entries, b.dirid_right, depth - 1, ind + " ") +
+         dump_tree(dir_entries, b.dirid_root, depth - 1, ind + " ");
 }
 
 void try_main(int argc, char **argv) {
@@ -166,7 +168,8 @@ void try_main(int argc, char **argv) {
     secid = sat[secid];
   }
 
-  dump_tree(root_dir, 0);
+  int sz = dump_tree(root_dir, 0);
+  std::cout << "Total stream size: " << sz << "\n";
 }
 
 int main(int argc, char **argv) { try_main(argc, argv); }
