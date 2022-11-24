@@ -88,6 +88,29 @@ public:
   }
 };
 
+class tree_node {
+  const std::vector<dir_entry> &m_entries;
+  dirid_t m_id;
+
+public:
+  tree_node(const std::vector<dir_entry> &e, dirid_t id = 0)
+      : m_entries{e}, m_id{id} {}
+
+  [[nodiscard]] explicit operator bool() const { return m_id >= 0; }
+
+  [[nodiscard]] const auto &entry() const { return m_entries[m_id]; }
+
+  [[nodiscard]] tree_node left() const {
+    return {m_entries, entry().dirid_left};
+  };
+  [[nodiscard]] tree_node right() const {
+    return {m_entries, entry().dirid_right};
+  };
+  [[nodiscard]] tree_node root() const {
+    return {m_entries, entry().dirid_root};
+  };
+};
+
 inline void dump_str(const char16_t *chars, unsigned char_count) {
   for (auto c : std::span{chars, char_count}) {
     uint8_t uc = (uint8_t)c;
@@ -101,22 +124,20 @@ inline void dump_str(const char16_t *chars, unsigned char_count) {
   std::cout << ":" << char_count;
 }
 
-int dump_tree(auto &dir_entries, dirid_t dirid, unsigned depth = 10,
-              const std::string &ind = "") {
-  if (dirid < 0 || depth <= 0)
+int dump_tree(tree_node n, unsigned depth = 10, const std::string &ind = "") {
+  if (!n || depth <= 0)
     return 0;
 
-  const auto &b = dir_entries[dirid];
+  const auto &b = n.entry();
   const auto name_len = (b.name_size - 1) / 2;
   std::cout << ind << "[";
   dump_str(b.name.data(), name_len);
   std::cout << "] t:" << (int)b.type << " " << b.dirid_left << " "
             << b.dirid_right << " " << b.dirid_root
             << " secid:" << b.secid_first << " sz:" << b.stream_size << "\n";
-  return b.stream_size +
-         dump_tree(dir_entries, b.dirid_left, depth - 1, ind + " ") +
-         dump_tree(dir_entries, b.dirid_right, depth - 1, ind + " ") +
-         dump_tree(dir_entries, b.dirid_root, depth - 1, ind + " ");
+  return b.stream_size + dump_tree(n.left(), depth - 1, ind + " ") +
+         dump_tree(n.right(), depth - 1, ind + " ") +
+         dump_tree(n.root(), depth - 1, ind + " ");
 }
 
 void try_main(int argc, char **argv) {
@@ -168,7 +189,7 @@ void try_main(int argc, char **argv) {
     secid = sat[secid];
   }
 
-  int sz = dump_tree(root_dir, 0);
+  int sz = dump_tree(root_dir);
   std::cout << "Total stream size: " << sz << "\n";
 }
 
