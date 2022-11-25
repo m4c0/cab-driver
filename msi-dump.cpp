@@ -190,11 +190,41 @@ void try_main(int argc, char **argv) {
     secid = sat[secid];
   }
 
+  // Read SSAT from SAT
+
   tree_node tree{root_dir};
-  tree.visit([](auto e) {
+
+  std::vector<secid_t> ssat;
+  secid = h.secid_short_sat;
+  while (secid >= 0) {
+    r.read(secid, ssat);
+    secid = sat[secid];
+  }
+
+  tree.visit([&](auto e) {
     const auto &b = e->entry();
-    std::cout << e->name() << ":" << b.name_size << " secid:" << b.secid_first
-              << " sz:" << b.stream_size << "\n";
+    std::cout << e->name() << ":" << e->name().size()
+              << " secid:" << b.secid_first << " sz:" << b.stream_size << "\n";
+    return true;
+  });
+
+  tree.visit([&](auto e) {
+    if (e->name() == "5 SummaryInformation") {
+      const auto &b = e->entry();
+      auto secid = b.secid_first;
+      auto sz = b.stream_size;
+
+      std::vector<uint8_t> buf;
+      buf.reserve(sz);
+      if (sz < h.min_stream_size) {
+        // r.read(buf, ssat);
+      } else {
+        // r.read(buf, sat);
+      }
+      std::cout << secid << " " << sz << "\n";
+      return false;
+    }
+
     return true;
   });
 }
