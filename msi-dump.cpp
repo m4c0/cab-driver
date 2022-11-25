@@ -36,27 +36,23 @@ void try_main(int argc, char **argv) {
     throw std::runtime_error("Extended MSAT not supported");
 
   tables t{f.rdbuf(), h};
-  auto root_dir = t.read<dir_entry>(h.secid_dir);
 
-  treenode tree{root_dir};
-
-  tree.visit([&](auto e) {
+  t.visit_tree([&](auto e) {
     const auto &b = e->entry();
     std::cout << e->name() << ":" << e->name().size()
               << " secid:" << b.secid_first << " sz:" << b.stream_size << "\n";
     return true;
   });
 
-  tree.visit([&](auto e) {
+  t.visit_tree([&](auto e) {
     if (e->name() == "5 SummaryInformation") {
       const auto &b = e->entry();
       auto secid = b.secid_first;
       auto sz = b.stream_size;
 
-      auto buf = t.read_stream(secid, sz);
-      for (int i = 0; i < 32; i++)
-        std::cout << (int)buf[i] << " ";
-      std::cout << "\n";
+      // auto buf = t.read_stream(secid, sz);
+      // for (int i = 0; i < 32; i++) std::cout << (int)buf[i] << " "; std::cout
+      // << "\n";
       return false;
     }
 

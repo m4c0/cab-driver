@@ -1,10 +1,12 @@
 module;
+#include <array>
 #include <strstream>
 #include <vector>
 
 export module msi:tables;
 import :pods;
 import :reader;
+import :treenode;
 
 namespace msi {
 export class tables {
@@ -13,13 +15,15 @@ export class tables {
   std::vector<secid_t> m_sat;
   std::vector<secid_t> m_ssat;
   std::vector<uint8_t> m_sstr;
+  std::vector<dir_entry> m_dirs;
 
 public:
   tables(std::streambuf *f, const header &h)
       : m_reader(f, 1U << h.pot_sec_size), m_min_stream_size(h.min_stream_size),
         m_sat(m_reader.read_sat(h)),
         m_ssat(m_reader.read_chain<secid_t>(m_sat, h.secid_short_sat)),
-        m_sstr(m_reader.read_chain<uint8_t>(m_ssat, 0 /*wrong*/)) {}
+        m_sstr(m_reader.read_chain<uint8_t>(m_ssat, 0 /*wrong*/)),
+        m_dirs(m_reader.read_chain<dir_entry>(m_sat, h.secid_dir)) {}
 
   template <typename T> inline auto read(secid_t secid) {
     return m_reader.read_chain<T>(m_sat, secid);
@@ -33,5 +37,7 @@ public:
       return m_reader.read_chain<uint8_t>(m_sat, secid);
     }
   }
+
+  inline void visit_tree(auto fn) const { treenode{m_dirs}.visit(fn); }
 };
 } // namespace msi
