@@ -29,9 +29,6 @@ void try_main(int argc, char **argv) {
   if (h.byte_order != 0xFFFE)
     throw std::runtime_error("Invalid byte order");
 
-  const auto sec_size = 1U << h.pot_sec_size;
-  const auto mini_sec_size = 1U << h.pot_minisec_size;
-
   if (h.secid_msat != -2)
     throw std::runtime_error("Extended MSAT not supported");
 
@@ -50,9 +47,11 @@ void try_main(int argc, char **argv) {
       auto secid = b.secid_first;
       auto sz = b.stream_size;
 
-      // auto buf = t.read_stream(secid, sz);
-      // for (int i = 0; i < 32; i++) std::cout << (int)buf[i] << " "; std::cout
-      // << "\n";
+      auto buf = t.read_stream(secid, sz);
+      std::cout << buf.size() << "\n";
+      for (int i = 0; i < buf.size(); i++)
+        std::cout << buf[i] << " ";
+      std::cout << "\n";
       return false;
     }
 
@@ -65,7 +64,7 @@ int main(int argc, char **argv) {
     try_main(argc, argv);
     return 0;
   } catch (const std::exception &e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << "Failure: " << e.what() << std::endl;
     return 1;
   }
 }
