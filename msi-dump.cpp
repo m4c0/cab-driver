@@ -35,11 +35,8 @@ void try_main(int argc, char **argv) {
   if (h.secid_msat != -2)
     throw std::runtime_error("Extended MSAT not supported");
 
-  reader r{f.rdbuf(), sec_size};
-
-  auto sat = r.read_sat(h);
-  auto root_dir = r.read_chain<dir_entry>(sat, h.secid_dir);
-  auto ssat = r.read_chain<secid_t>(sat, h.secid_short_sat);
+  tables t{f.rdbuf(), h};
+  auto root_dir = t.read<dir_entry>(h.secid_dir);
 
   treenode tree{root_dir};
 
@@ -56,14 +53,10 @@ void try_main(int argc, char **argv) {
       auto secid = b.secid_first;
       auto sz = b.stream_size;
 
-      std::vector<uint8_t> buf;
-      buf.reserve(sz);
-      if (sz < h.min_stream_size) {
-        // r.read(buf, ssat);
-      } else {
-        // r.read(buf, sat);
-      }
-      std::cout << secid << " " << sz << "\n";
+      auto buf = t.read_stream(secid, sz);
+      for (int i = 0; i < 32; i++)
+        std::cout << (int)buf[i] << " ";
+      std::cout << "\n";
       return false;
     }
 
