@@ -1,14 +1,9 @@
-import msi;
-
 #include <array>
 #include <fstream>
-#include <iomanip>
 #include <iostream>
-#include <locale>
-#include <span>
-#include <sstream>
-#include <string_view>
-#include <vector>
+#include <stdexcept>
+
+import msi;
 
 using namespace msi;
 
@@ -42,34 +37,11 @@ void try_main(int argc, char **argv) {
 
   reader r{f.rdbuf(), sec_size};
 
-  // Build SAT from MSAT
-
-  std::vector<secid_t> sat;
-  for (auto s : h.first_sect_fats) {
-    r.read(s, sat);
-  }
-  if (sat[0] != -3)
-    throw std::runtime_error("Invalid SAT sector");
-
-  // Read dir from SAT
-
-  std::vector<dir_entry> root_dir;
-  auto secid = h.secid_dir;
-  while (secid >= 0) {
-    r.read(secid, root_dir);
-    secid = sat[secid];
-  }
-
-  // Read SSAT from SAT
+  auto sat = r.read_sat(h);
+  auto root_dir = r.read_chain<dir_entry>(sat, h.secid_dir);
+  auto ssat = r.read_chain<secid_t>(sat, h.secid_short_sat);
 
   treenode tree{root_dir};
-
-  std::vector<secid_t> ssat;
-  secid = h.secid_short_sat;
-  while (secid >= 0) {
-    r.read(secid, ssat);
-    secid = sat[secid];
-  }
 
   tree.visit([&](auto e) {
     const auto &b = e->entry();
