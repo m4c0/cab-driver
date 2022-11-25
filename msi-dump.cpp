@@ -60,4 +60,12 @@ void try_main(int argc, char **argv) {
   });
 }
 
-int main(int argc, char **argv) { try_main(argc, argv); }
+int main(int argc, char **argv) {
+  try {
+    try_main(argc, argv);
+    return 0;
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << std::endl;
+    return 1;
+  }
+}
