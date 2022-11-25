@@ -120,7 +120,11 @@ public:
     for (auto c : std::span{entry().name.data(), name_len}) {
       uint8_t uc = (uint8_t)c;
       if (uc == c) {
-        res << uc;
+        if (uc >= 32 && uc < 127) {
+          res << uc;
+        } else {
+          res << std::hex << (unsigned)c << " " << std::dec;
+        }
       } else {
         uint16_t sc = (uint16_t)((int)c & 0xFFFFU);
         res << std::setw(4) << std::hex << sc << " " << std::dec;
@@ -162,7 +166,6 @@ void try_main(int argc, char **argv) {
 
   const auto sec_size = 1U << h.pot_sec_size;
   const auto mini_sec_size = 1U << h.pot_minisec_size;
-  std::cerr << "Sector size: " << sec_size << "\n";
 
   if (h.secid_msat != -2)
     throw std::runtime_error("Extended MSAT not supported");
