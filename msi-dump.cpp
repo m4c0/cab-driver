@@ -49,8 +49,14 @@ void try_main(int argc, char **argv) {
 
       auto buf = t.read_stream(secid, sz);
       std::cout << buf.size() << "\n";
-      for (int i = 0; i < buf.size(); i++)
-        std::cout << buf[i] << " ";
+      for (int i = 0; i < buf.size(); i++) {
+        auto c = (int)buf[i];
+        if (c < 32 || c > 127) {
+          std::cout << (int)buf[i] << " ";
+        } else {
+          std::cout << buf[i];
+        }
+      }
       std::cout << "\n";
       return false;
     }

@@ -36,8 +36,17 @@ public:
 
   inline auto read_stream(secid_t secid, unsigned len) {
     if (len < m_min_stream_size) {
-      auto begin = m_sstr.begin() + secid * m_min_sec_size;
-      return std::vector<uint8_t>(begin, begin + len);
+      std::vector<uint8_t> res;
+      while (secid >= 0) {
+        auto sz = res.size();
+        res.resize(sz + m_min_sec_size);
+
+        auto begin = m_sstr.begin() + secid * m_min_sec_size;
+        std::copy(begin, begin + m_min_sec_size, res.begin() + sz);
+
+        secid = m_ssat[secid];
+      }
+      return res;
     } else {
       return m_reader.read_chain<uint8_t>(m_sat, secid);
     }
