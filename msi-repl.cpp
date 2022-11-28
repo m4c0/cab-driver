@@ -11,8 +11,7 @@ using namespace msi;
 std::optional<std::string> read_cmd() {
   std::cout << "> ";
   std::string res;
-  std::cin >> res;
-  return std::cin ? std::optional{res} : std::nullopt;
+  return std::getline(std::cin, res) ? std::optional{res} : std::nullopt;
 }
 
 std::string eval_cmd(const auto &t, const std::string &cmd) {
@@ -20,7 +19,7 @@ std::string eval_cmd(const auto &t, const std::string &cmd) {
   if (cmd == "list") {
     t.visit_tree([&](auto e) {
       const auto &b = e->entry();
-      res << e->name() << " size:" << b.stream_size << "\n";
+      res << e->name() << " -- size:" << b.stream_size << "\n";
       return true;
     });
   } else {
