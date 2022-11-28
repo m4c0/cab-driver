@@ -15,5 +15,9 @@ int main(int argc, char **argv) {
   e->add_ref(m);
   e->add_unit<>("msi-dump");
 
+  auto repl = all.add_unit<exe>("msi-repl");
+  repl->add_ref(m);
+  repl->add_unit<>("msi-repl");
+
   return run_main(all, argc, argv);
 }
