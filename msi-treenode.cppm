@@ -36,6 +36,11 @@ public:
 
   [[nodiscard]] std::string name() const {
     std::stringstream res;
+    res << std::setfill('0') << std::hex;
+    const auto hex = [&res](unsigned c) {
+      res << "<" << std::setw(2) << (unsigned)c << std::setw(1) << ">";
+    };
+
     const size_t name_len = (entry().name_size - 1) / 2;
     for (auto c : std::span{entry().name.data(), name_len}) {
       uint8_t uc = (uint8_t)c;
@@ -43,11 +48,13 @@ public:
         if (uc >= 32 && uc < 127) {
           res << uc;
         } else {
-          res << std::hex << (unsigned)c << " " << std::dec;
+          hex(c);
         }
       } else {
-        uint16_t sc = (uint16_t)((int)c & 0xFFFFU);
-        res << std::setw(4) << std::hex << sc << " " << std::dec;
+        unsigned a = (unsigned)c & 0xFF;
+        unsigned b = ((unsigned)c >> 8) & 0xFF;
+        hex(a);
+        hex(b);
       }
     }
     return res.str();

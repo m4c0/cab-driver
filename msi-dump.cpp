@@ -24,7 +24,7 @@ void try_main(int argc, char **argv) {
   });
 
   t.visit_tree([&](auto e) {
-    if (e->name() == "5 SummaryInformation") {
+    if (e->name() == "<05>SummaryInformation") {
       const auto &b = e->entry();
       auto secid = b.secid_first;
       auto sz = b.stream_size;
