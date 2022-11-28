@@ -1,4 +1,5 @@
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <optional>
 #include <sstream>
@@ -14,7 +15,7 @@ std::optional<std::string> read_cmd() {
   return std::getline(std::cin, res) ? std::optional{res} : std::nullopt;
 }
 
-std::string eval_cmd(const auto &t, const std::string &cmd) {
+std::string eval_cmd(auto &t, const std::string &cmd) {
   std::stringstream res;
   if (cmd == "list") {
     t.visit_tree([&](auto e) {
@@ -23,7 +24,28 @@ std::string eval_cmd(const auto &t, const std::string &cmd) {
       return true;
     });
   } else {
-    res << "Unknown command: " << cmd;
+    res << std::setfill('0') << std::hex;
+    t.visit_tree([&](auto e) {
+      if (e->name() != cmd)
+        return true;
+
+      unsigned i = 0;
+      for (auto c : t.read_stream(e->entry())) {
+        res << std::setw(2) << (unsigned)c;
+        switch (++i % 16) {
+        case 0:
+          res << '\n';
+          break;
+        case 8:
+          res << "  ";
+          break;
+        default:
+          res << ' ';
+          break;
+        }
+      }
+      return false;
+    });
   }
   return res.str();
 }

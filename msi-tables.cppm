@@ -52,6 +52,13 @@ public:
     }
   }
 
+  inline auto read_stream(const dir_entry &e) {
+    auto secid = e.secid_first;
+    auto sz = e.stream_size;
+
+    return read_stream(secid, sz);
+  }
+
   inline void visit_tree(auto fn) const { treenode{m_dirs}.visit(fn); }
 };
 } // namespace msi

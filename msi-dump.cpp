@@ -25,11 +25,7 @@ void try_main(int argc, char **argv) {
 
   t.visit_tree([&](auto e) {
     if (e->name() == "<05>SummaryInformation") {
-      const auto &b = e->entry();
-      auto secid = b.secid_first;
-      auto sz = b.stream_size;
-
-      auto buf = t.read_stream(secid, sz);
+      auto buf = t.read_stream(e->entry());
       std::cout << buf.size() << "\n";
       for (int i = 0; i < buf.size(); i++) {
         auto c = (int)buf[i];
