@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <sstream>
 #include <string>
 
 import msi;
@@ -14,7 +15,19 @@ std::optional<std::string> read_cmd() {
   return std::cin ? std::optional{res} : std::nullopt;
 }
 
-std::string eval_cmd(const std::string &cmd) { return cmd; }
+std::string eval_cmd(const auto &t, const std::string &cmd) {
+  std::stringstream res;
+  if (cmd == "list") {
+    t.visit_tree([&](auto e) {
+      const auto &b = e->entry();
+      res << e->name() << " size:" << b.stream_size << "\n";
+      return true;
+    });
+  } else {
+    res << "Unknown command: " << cmd;
+  }
+  return res.str();
+}
 
 void print_result(const std::string &res) { std::cout << res << std::endl; }
 
@@ -26,8 +39,10 @@ void try_main(int argc, char **argv) {
   if (!f)
     throw std::runtime_error("Could not open input file");
 
+  auto t = msi::read(f.rdbuf());
+
   while (auto cmd = read_cmd()) {
-    print_result(eval_cmd(*cmd));
+    print_result(eval_cmd(t, *cmd));
   }
 }
 
