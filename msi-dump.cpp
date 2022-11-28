@@ -1,11 +1,23 @@
 #include <array>
 #include <fstream>
 #include <iostream>
+#include <span>
 #include <stdexcept>
 
 import msi;
 
 using namespace msi;
+
+using guid = std::array<uint8_t, 16>;
+struct pset_str {
+  uint16_t byte_order;
+  uint16_t version;
+  uint32_t sys_id;
+  guid clsid;
+  uint32_t num_psets;
+  guid fmtid0;
+  uint32_t offset0;
+};
 
 void try_main(int argc, char **argv) {
   if (argc != 2)
@@ -26,16 +38,24 @@ void try_main(int argc, char **argv) {
   t.visit_tree([&](auto e) {
     if (e->name() == "<05>SummaryInformation") {
       auto buf = t.read_stream(e->entry());
-      std::cout << buf.size() << "\n";
-      for (int i = 0; i < buf.size(); i++) {
-        auto c = (int)buf[i];
-        if (c < 32 || c > 127) {
-          std::cout << (int)buf[i] << " ";
-        } else {
-          std::cout << buf[i];
-        }
-      }
-      std::cout << "\n";
+      std::span<pset_str> spn{(pset_str *)buf.data(), buf.size()};
+
+      constexpr const guid fmtid_summary_information = {
+          0xE0, 0x85, 0x9F, 0xF2, 0xF9, 0x4F, 0x68, 0x10,
+          0xAB, 0x91, 0x08, 0x00, 0x2B, 0x27, 0xB3, 0xD9};
+
+      auto pss = spn[0];
+      if (pss.byte_order != 0xFFFE)
+        throw std::runtime_error("Invalid signature in summary information");
+      if (pss.version != 0)
+        throw std::runtime_error("Expection version 0 property set");
+      if (pss.num_psets != 1)
+        throw std::runtime_error("Only one property set is supported");
+      if (pss.fmtid0 != fmtid_summary_information)
+        throw std::runtime_error("Invalid format");
+
+      std::cout << "o0" << pss.offset0 << "\n";
+
       return false;
     }
 

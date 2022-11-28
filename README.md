@@ -12,3 +12,4 @@ Just trying to learn how MSI internals works.
 * https://learn.microsoft.com/en-us/archive/blogs/robmen/deciphering-the-msi-directory-table-part-6-standard-directories
 * https://learn.microsoft.com/en-us/archive/blogs/robmen/deciphering-the-msi-directory-table-part-7-directories-are-properties
 * https://github.com/wixtoolset/Data/tree/master/src/WixToolset.Data/Symbols
+* https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-oleps/3f9119dc-faa2-4bb9-af95-5cf128fa5fbd?redirectedfrom=MSDN
