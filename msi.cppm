@@ -4,6 +4,7 @@ module;
 
 export module msi;
 
+export import :dbmeta;
 import :pods;
 import :reader;
 export import :strpool;

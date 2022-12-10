@@ -11,6 +11,7 @@ int main(int argc, char **argv) {
   m->add_part("treenode");
   m->add_part("tables");
   m->add_part("strpool");
+  m->add_part("dbmeta");
 
   auto e = all.add_unit<exe>("msi-dump");
   e->add_ref(m);
