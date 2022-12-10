@@ -30,6 +30,71 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
     for (const auto &s : *pool) {
       res << s << "\n";
     }
+    res << "Total: " << (*pool).size() << "\n";
+  } else if (cmd == "tables") {
+    msi::strpool pool{t};
+    t.visit_tree([&](auto e) {
+      if (e->name() != "__Tables")
+        return true;
+
+      auto raw = t.read_stream(e->entry());
+      std::span<uint16_t> list{(uint16_t *)raw.data(),
+                               raw.size() / sizeof(uint16_t)};
+      unsigned i = 0;
+      for (const auto &idx : list) {
+        auto ostr = pool[idx];
+        if (!ostr)
+          continue;
+
+        res << *ostr << "\n";
+        i++;
+      }
+      res << "Total: " << i << "\n";
+      return false;
+    });
+  } else if (cmd == "test") {
+    msi::strpool pool{t};
+    t.visit_tree([&](auto e) {
+      if (e->name() != "__Columns")
+        return true;
+
+      constexpr const auto row_size = sizeof(uint16_t) * 4;
+
+      auto raw = t.read_stream(e->entry());
+      const auto row_count = raw.size() / row_size;
+
+      struct col {
+        std::string table;
+        uint16_t index;
+        std::string name;
+        uint16_t wut;
+      };
+      std::vector<col> data{};
+      data.resize(row_count);
+
+      std::span<uint16_t> tables{(uint16_t *)raw.data(), row_count};
+      for (auto i = 0; i < row_count; i++)
+        data[i].table = *(pool[tables[i]]);
+
+      std::span<uint16_t> indices{tables.end(), row_count};
+      for (auto i = 0; i < row_count; i++)
+        data[i].index = indices[i] & 0x7FFFU;
+
+      std::span<uint16_t> names{indices.end(), row_count};
+      for (auto i = 0; i < row_count; i++)
+        data[i].name = *(pool[names[i]]);
+
+      std::span<uint16_t> wuts{names.end(), row_count};
+      for (auto i = 0; i < row_count; i++)
+        data[i].wut = wuts[i];
+
+      for (const auto &d : data) {
+        res << d.table << "\t" << d.index << "\t" << d.name << "\t" << std::hex
+            << d.wut << std::dec << "\n";
+      }
+
+      return false;
+    });
   } else {
     res << std::setfill('0') << std::hex;
     t.visit_tree([&](auto e) {

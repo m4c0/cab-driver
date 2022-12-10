@@ -35,8 +35,8 @@ public:
   }
 
   inline auto read_stream(secid_t secid, unsigned len) {
+    std::vector<uint8_t> res;
     if (len < m_min_stream_size) {
-      std::vector<uint8_t> res;
       while (secid >= 0) {
         auto sz = res.size();
         res.resize(sz + m_min_sec_size);
@@ -46,10 +46,11 @@ public:
 
         secid = m_ssat[secid];
       }
-      return res;
     } else {
-      return m_reader.read_chain<uint8_t>(m_sat, secid);
+      res = m_reader.read_chain<uint8_t>(m_sat, secid);
     }
+    res.resize(len);
+    return res;
   }
 
   inline auto read_stream(const dir_entry &e) {

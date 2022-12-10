@@ -1,4 +1,5 @@
 module;
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -34,7 +35,7 @@ public:
       std::span<uint32_t> pool{(uint32_t *)raw.data(),
                                raw.size() / sizeof(uint32_t)};
       if (pool[0] != 0xfde9) {
-        throw std::runtime_error("String pool does not have magic number");
+        throw std::runtime_error("String pool is not UTF-8");
       }
 
       std::string_view str{(char *)data.data(), data.size()};
@@ -52,5 +53,13 @@ public:
   }
 
   [[nodiscard]] const auto &operator*() const noexcept { return m_strs; }
+
+  [[nodiscard]] std::optional<std::string_view> operator[](unsigned idx) const {
+    if (idx == 0)
+      return std::nullopt;
+    if (idx > m_strs.size())
+      throw std::runtime_error("Invalid access to string pool");
+    return {m_strs[idx - 1]};
+  }
 };
 } // namespace msi
