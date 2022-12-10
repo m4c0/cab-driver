@@ -67,7 +67,7 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
         std::string table;
         uint16_t index;
         std::string name;
-        uint16_t wut;
+        uint16_t meta;
       };
       std::vector<col> data{};
       data.resize(row_count);
@@ -84,13 +84,15 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
       for (auto i = 0; i < row_count; i++)
         data[i].name = *(pool[names[i]]);
 
-      std::span<uint16_t> wuts{names.end(), row_count};
+      std::span<uint16_t> metas{names.end(), row_count};
       for (auto i = 0; i < row_count; i++)
-        data[i].wut = wuts[i];
+        data[i].meta = metas[i] & 0x7FFFU;
 
       for (const auto &d : data) {
-        res << d.table << "\t" << d.index << "\t" << d.name << "\t" << std::hex
-            << d.wut << std::dec << "\n";
+        res << d.table << "\t" << d.index << "\t";
+        res << (d.meta & 0x2000 ? "K" : ".");
+        res << (d.meta & 0x1000 ? "N" : ".");
+        res << "\t" << d.name << "\n";
       }
 
       return false;
