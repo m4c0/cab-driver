@@ -61,10 +61,12 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
       }
       res << "\t" << d.name << "\n";
     }
-  } else if (cmd == "test") {
+  } else if (cmd.substr(0, 2) == "d ") {
     msi::dbmeta m{t};
 
-    const auto cols = m.columns("MsiFileHash");
+    const auto fn = cmd.substr(2);
+    const auto kfn = "_" + fn;
+    const auto cols = m.columns(fn);
 
     struct colpair {
       unsigned offset;
@@ -83,6 +85,7 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
         row_size += 2;
         break;
       case 13:
+      case 15:
         row_size += 2;
         break;
       default:
@@ -94,7 +97,7 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
     }
 
     t.visit_tree([&](auto e) {
-      if (e->name() != "_MsiFileHash")
+      if (e->name() != kfn)
         return true;
 
       auto raw = t.read_stream(e->entry());
@@ -111,14 +114,18 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
           auto *ptr = raw.data() + c.offset * row_count + ri;
           switch (c.col.meta.s.type) {
           case 1:
-            res << *(uint32_t *)ptr;
+            res << (*(uint32_t *)ptr & 0x7FFFFFFFU);
             break;
           case 5:
-            res << (*(uint16_t *)ptr & 0x7FFF);
+            res << (*(uint16_t *)ptr & 0x7FFFU);
             break;
           case 13:
-            res << *(m.string(*(uint16_t *)ptr));
+          case 15: {
+            const auto v = *(uint16_t *)ptr;
+            if (v)
+              res << *(m.string(v));
             break;
+          }
           default:
             break;
           }
