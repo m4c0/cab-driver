@@ -2,8 +2,10 @@
 #include <iomanip>
 #include <iostream>
 #include <optional>
+#include <span>
 #include <sstream>
 #include <string>
+#include <string_view>
 
 import msi;
 
@@ -22,6 +24,33 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
       const auto &b = e->entry();
       res << e->name() << " -- size:" << b.stream_size << "\n";
       return true;
+    });
+  } else if (cmd == "strings") {
+    std::vector<uint8_t> data;
+    t.visit_tree([&](auto e) {
+      if (e->name() != "__StringData")
+        return true;
+      data = t.read_stream(e->entry());
+      return false;
+    });
+    t.visit_tree([&](auto e) {
+      if (e->name() != "__StringPool")
+        return true;
+
+      auto raw = t.read_stream(e->entry());
+      std::span<uint32_t> pool{(uint32_t *)raw.data() + 1, raw.size() / 2};
+      std::string_view str{(char *)data.data(), data.size()};
+      for (auto dt : pool) {
+        auto sz = dt & 0xFFFF;
+        if (sz > str.size()) {
+          res << "Failure!!!!\n";
+          break;
+        }
+        res << str.substr(0, sz) << "\n";
+        str = str.substr(sz);
+      }
+
+      return false;
     });
   } else {
     res << std::setfill('0') << std::hex;
