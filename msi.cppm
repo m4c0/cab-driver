@@ -6,6 +6,7 @@ export module msi;
 
 import :pods;
 import :reader;
+export import :strpool;
 import :tables;
 import :treenode;
 

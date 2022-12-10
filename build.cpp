@@ -10,6 +10,7 @@ int main(int argc, char **argv) {
   m->add_part("reader");
   m->add_part("treenode");
   m->add_part("tables");
+  m->add_part("strpool");
 
   auto e = all.add_unit<exe>("msi-dump");
   e->add_ref(m);
