@@ -67,7 +67,15 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
         std::string table;
         uint16_t index;
         std::string name;
-        uint16_t meta;
+        union {
+          struct {
+            unsigned len : 8;
+            unsigned type : 4;
+            bool nullable : 1;
+            bool key : 1;
+          } s;
+          uint16_t u16;
+        } meta;
       };
       std::vector<col> data{};
       data.resize(row_count);
@@ -86,12 +94,14 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
 
       std::span<uint16_t> metas{names.end(), row_count};
       for (auto i = 0; i < row_count; i++)
-        data[i].meta = metas[i] & 0x7FFFU;
+        data[i].meta.u16 = metas[i] & 0x7FFFU;
 
       for (const auto &d : data) {
         res << d.table << "\t" << d.index << "\t";
-        res << (d.meta & 0x2000 ? "K" : ".");
-        res << (d.meta & 0x1000 ? "N" : ".");
+        res << (d.meta.s.key ? "K" : ".");
+        res << (d.meta.s.nullable ? "N" : ".");
+        res << "\t" << d.meta.s.type;
+        res << "\t" << std::hex << d.meta.s.len << std::dec;
         res << "\t" << d.name << "\n";
       }
 
