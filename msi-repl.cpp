@@ -41,8 +41,24 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
     for (const auto &d : m.columns(cmd.substr(2))) {
       res << (d.meta.s.key ? "K" : ".");
       res << (d.meta.s.nullable ? "N" : ".");
-      res << "\t" << d.meta.s.type;
-      res << "\t" << std::hex << d.meta.s.len << std::dec;
+      res << "\t";
+      switch (d.meta.s.type) {
+      case 1:
+        res << "Int32";
+        break;
+      case 5:
+        res << "Int16";
+        break;
+      case 9:
+        res << "Blob";
+        break;
+      case 13:
+        res << "Str(" << d.meta.s.len << ")";
+        break;
+      default:
+        res << d.meta.s.type << "-" << std::hex << d.meta.s.len << std::dec;
+        break;
+      }
       res << "\t" << d.name << "\n";
     }
   } else {
