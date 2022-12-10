@@ -91,6 +91,8 @@ public:
                  [tbl](const auto &c) { return c.table == tbl; });
     return res;
   }
+
+  [[nodiscard]] auto string(unsigned idx) const { return m_pool[idx]; }
 };
 
 } // namespace msi

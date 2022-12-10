@@ -61,6 +61,74 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
       }
       res << "\t" << d.name << "\n";
     }
+  } else if (cmd == "test") {
+    msi::dbmeta m{t};
+
+    const auto cols = m.columns("MsiFileHash");
+
+    struct colpair {
+      unsigned offset;
+      decltype(cols[0]) col;
+    };
+    std::vector<colpair> cp;
+    auto row_size = 0U;
+    auto row_incr = 0U;
+    for (const auto &c : cols) {
+      cp.push_back({row_size, c});
+      switch (c.meta.s.type) {
+      case 1:
+        row_size += 4;
+        break;
+      case 5:
+        row_size += 2;
+        break;
+      case 13:
+        row_size += 2;
+        break;
+      default:
+        res << "Unsupported column type: " << c.meta.s.type << "\n";
+        return res.str();
+      }
+      if (row_incr == 0)
+        row_incr = row_size;
+    }
+
+    t.visit_tree([&](auto e) {
+      if (e->name() != "_MsiFileHash")
+        return true;
+
+      auto raw = t.read_stream(e->entry());
+      const auto row_count = raw.size() / row_size;
+
+      for (const auto &c : cp) {
+        res << c.col.name << "\t";
+      }
+      res << "\n";
+
+      for (auto i = 0U; i < row_count; i++) {
+        const auto ri = row_incr * i;
+        for (const auto &c : cp) {
+          auto *ptr = raw.data() + c.offset * row_count + ri;
+          switch (c.col.meta.s.type) {
+          case 1:
+            res << *(uint32_t *)ptr;
+            break;
+          case 5:
+            res << (*(uint16_t *)ptr & 0x7FFF);
+            break;
+          case 13:
+            res << *(m.string(*(uint16_t *)ptr));
+            break;
+          default:
+            break;
+          }
+          res << "\t";
+        }
+        res << "\n";
+      }
+
+      return false;
+    });
   } else {
     res << std::setfill('0') << std::hex;
     t.visit_tree([&](auto e) {
