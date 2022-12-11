@@ -62,94 +62,17 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
       res << "\t" << d.name << "\n";
     }
   } else if (cmd.substr(0, 2) == "d ") {
-    const auto fn = cmd.substr(2);
-    const auto kfn = "_" + fn;
-
     msi::dbmeta m{t};
 
+    const auto fn = cmd.substr(2);
     const auto cols = m.columns(fn);
 
-    struct colpair {
-      unsigned offset;
-      decltype(cols[0]) col;
-    };
-    std::vector<colpair> cp;
-    auto row_size = 0U;
-    auto row_incr = 0U;
     for (const auto &c : cols) {
-      cp.push_back({row_size, c});
-      switch (c.meta.s.type) {
-      case 1:
-        row_size += 4;
-        break;
-      case 5:
-        row_size += 2;
-        break;
-      case 9:
-        throw std::runtime_error("No support for blobs");
-      case 13:
-      case 15:
-        row_size += 2;
-        break;
-      default:
-        throw std::runtime_error("No support for that column type");
-      }
-      if (row_incr == 0)
-        row_incr = row_size;
-    }
-
-    struct column {
-      unsigned data;
-      bool string;
-    };
-    std::vector<std::vector<column>> data;
-
-    t.visit_tree([&](auto e) {
-      if (e->name() != kfn)
-        return true;
-
-      auto raw = t.read_stream(e->entry());
-      const auto row_count = raw.size() / row_size;
-      data.reserve(row_count);
-
-      for (auto i = 0U; i < row_count; i++) {
-        std::vector<column> row;
-        row.resize(cp.size());
-
-        auto d = row.begin();
-        const auto ri = row_incr * i;
-        for (const auto &c : cp) {
-          auto *ptr = raw.data() + c.offset * row_count + ri;
-          switch (c.col.meta.s.type) {
-          case 1:
-            d->data = *(uint32_t *)ptr & 0x7FFFFFFFU;
-            break;
-          case 5:
-            d->data = *(uint16_t *)ptr & 0x7FFFU;
-            break;
-          case 13:
-          case 15:
-            d->data = *(uint16_t *)ptr;
-            d->string = true;
-            break;
-          default:
-            break;
-          }
-          d++;
-        }
-
-        data.push_back(row);
-      }
-
-      return false;
-    });
-
-    for (const auto &c : cp) {
-      res << c.col.name << "\t";
+      res << c.name << "\t";
     }
     res << "\n";
 
-    for (const auto &row : data) {
+    for (const auto &row : m.table(fn)) {
       for (const auto &col : row) {
         if (col.string) {
           auto str = m.string(col.data);
