@@ -7,12 +7,14 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <unistd.h>
 
 import cdf;
 import msi;
 
 std::optional<std::string> read_cmd() {
-  std::cout << "> ";
+  if (isatty(0))
+    std::cout << "> ";
   std::string res;
   return std::getline(std::cin, res) ? std::optional{res} : std::nullopt;
 }
@@ -53,6 +55,7 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
         res << "Blob";
         break;
       case 13:
+      case 15:
         res << "Str(" << d.meta.s.len << ")";
         break;
       default:
