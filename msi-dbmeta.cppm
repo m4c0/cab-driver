@@ -12,9 +12,9 @@ import cdf;
 
 namespace msi {
 struct dbcolumn {
-  std::string table;
+  std::string_view table;
   uint16_t index;
-  std::string name;
+  std::string_view name;
   union {
     struct {
       unsigned len : 8;
