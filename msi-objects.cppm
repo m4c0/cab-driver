@@ -51,4 +51,27 @@ export [[nodiscard]] auto read_directories(msi::dbmeta &m) {
   }
   return res;
 }
+
+export [[nodiscard]] auto read_files(msi::dbmeta &m) {
+  auto dirs = msi::read_directories(m);
+
+  std::map<unsigned, std::filesystem::path> comps;
+  for (auto c : m.table("Component")) {
+    const auto id = c.at("Component").data;
+    const auto dir = c.at("Directory_").data;
+    comps.emplace(id, dirs[dir]);
+  }
+
+  std::map<unsigned, std::filesystem::path> res;
+  for (auto f : m.table("File")) {
+    const auto id = f.at("File").data;
+    const auto cmp = f.at("Component_").data;
+    const auto fn = f.at("FileName").data;
+
+    const auto path = comps[cmp];
+    const auto fname = strip_long_path(*m.string(fn));
+    res.emplace(id, path / fname);
+  }
+  return res;
+}
 } // namespace msi

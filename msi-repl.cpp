@@ -91,18 +91,8 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
     }
   } else if (cmd == "test") {
     msi::dbmeta m{t};
-
-    auto dirs = msi::read_directories(m);
-    for (auto &[k, v] : dirs) {
+    for (auto &[k, v] : msi::read_files(m)) {
       res << v << "\n";
-    }
-
-    for (auto f : m.table("File")) {
-      auto fn = *m.string(f.at("FileName").data);
-      if (fn.size() > 12)
-        fn = fn.substr(13);
-
-      // res << fn << "\n";
     }
   } else {
     res << std::setfill('0') << std::hex;
