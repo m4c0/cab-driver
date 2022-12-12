@@ -17,15 +17,15 @@ struct strpool_entry {
 };
 
 export class strpool {
-  std::vector<std::string> m_strs;
+  std::vector<uint8_t> m_data{};
+  std::vector<std::string_view> m_strs{};
 
 public:
   explicit strpool(cdf::tables &t) {
-    std::vector<uint8_t> data;
     t.visit_tree([&](auto e) {
       if (msi::decode_name(e->entry()) != "__StringData")
         return true;
-      data = t.read_stream(e->entry());
+      m_data = t.read_stream(e->entry());
       return false;
     });
     t.visit_tree([&](auto e) {
@@ -39,7 +39,7 @@ public:
         throw std::runtime_error("String pool is not UTF-8");
       }
 
-      std::string_view str{(char *)data.data(), data.size()};
+      std::string_view str{(char *)m_data.data(), m_data.size()};
       for (auto dt : pool.subspan(1)) {
         auto sz = dt & 0xFFFF;
         if (sz > str.size()) {
