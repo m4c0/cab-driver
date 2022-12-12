@@ -5,9 +5,7 @@
 #include <stdexcept>
 #include <string_view>
 
-import msi;
-
-using namespace msi;
+import cdf;
 
 using guid = std::array<uint8_t, 16>;
 struct pset_str {
@@ -40,7 +38,7 @@ void try_main(int argc, char **argv) {
   if (!f)
     throw std::runtime_error("Could not open input file");
 
-  auto t = msi::read(f.rdbuf());
+  auto t = cdf::read(f.rdbuf());
   t.visit_tree([&](auto e) {
     const auto &b = e->entry();
     std::cout << e->name() << ":" << e->name().size()

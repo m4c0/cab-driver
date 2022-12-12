@@ -2,10 +2,10 @@ module;
 #include <array>
 #include <streambuf>
 
-export module msi:reader;
+export module cdf:reader;
 import :pods;
 
-namespace msi {
+namespace cdf {
 export class reader {
   std::streambuf *m_f;
   unsigned m_sec_size;
@@ -55,4 +55,4 @@ public:
     return sat;
   }
 };
-} // namespace msi
+} // namespace cdf

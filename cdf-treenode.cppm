@@ -5,10 +5,10 @@ module;
 #include <sstream>
 #include <vector>
 
-export module msi:treenode;
+export module cdf:treenode;
 import :pods;
 
-namespace msi {
+namespace cdf {
 export class treenode {
   const std::vector<dir_entry> &m_entries;
   dirid_t m_id;
@@ -79,4 +79,4 @@ public:
            root().visit(fn);
   }
 };
-} // namespace msi
+} // namespace cdf

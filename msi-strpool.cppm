@@ -7,7 +7,7 @@ module;
 
 export module msi:strpool;
 
-import :tables;
+import cdf;
 
 namespace msi {
 struct strpool_entry {
@@ -19,7 +19,7 @@ export class strpool {
   std::vector<std::string> m_strs;
 
 public:
-  explicit strpool(tables &t) {
+  explicit strpool(cdf::tables &t) {
     std::vector<uint8_t> data;
     t.visit_tree([&](auto e) {
       if (e->name() != "__StringData")

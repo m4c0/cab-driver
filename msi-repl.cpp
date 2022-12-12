@@ -1,15 +1,15 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <optional>
 #include <span>
 #include <sstream>
 #include <string>
 #include <string_view>
 
+import cdf;
 import msi;
-
-using namespace msi;
 
 std::optional<std::string> read_cmd() {
   std::cout << "> ";
@@ -85,6 +85,27 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
       }
       res << "\n";
     }
+  } else if (cmd == "test") {
+    msi::dbmeta m{t};
+
+    struct dir {
+      unsigned parent;
+      unsigned name;
+    };
+    std::map<unsigned, dir> dirs;
+    for (auto d : m.table("Directory")) {
+      // TODO: map to column names
+      dirs[d[0].data] = {d[1].data, d[2].data};
+    }
+
+    for (auto f : m.table("File")) {
+      // TODO: map to column names
+      auto fn = *m.string(f[2].data);
+      if (fn.size() > 12)
+        fn = fn.substr(13);
+
+      res << fn << "\n";
+    }
   } else {
     res << std::setfill('0') << std::hex;
     t.visit_tree([&](auto e) {
@@ -122,7 +143,7 @@ void try_main(int argc, char **argv) {
   if (!f)
     throw std::runtime_error("Could not open input file");
 
-  auto t = msi::read(f.rdbuf());
+  auto t = cdf::read(f.rdbuf());
 
   while (auto cmd = read_cmd()) {
     print_result(eval_cmd(t, *cmd));

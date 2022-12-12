@@ -3,12 +3,12 @@ module;
 #include <strstream>
 #include <vector>
 
-export module msi:tables;
+export module cdf:tables;
 import :pods;
 import :reader;
 import :treenode;
 
-namespace msi {
+namespace cdf {
 export class tables {
   unsigned m_min_sec_size;
   unsigned m_min_stream_size;
@@ -62,4 +62,4 @@ public:
 
   inline void visit_tree(auto fn) const { treenode{m_dirs}.visit(fn); }
 };
-} // namespace msi
+} // namespace cdf

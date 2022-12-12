@@ -6,9 +6,8 @@ module;
 #include <vector>
 
 export module msi:dbmeta;
-
-import :tables;
 import :strpool;
+import cdf;
 
 namespace msi {
 struct dbcolumn {
@@ -28,12 +27,12 @@ struct dbcolumn {
 
 export class dbmeta {
   msi::strpool m_pool;
-  msi::tables &m_t;
+  cdf::tables &m_t;
   std::vector<std::string_view> m_tables;
   std::vector<dbcolumn> m_columns;
 
 public:
-  explicit dbmeta(tables &t) : m_pool{t}, m_t{t} {
+  explicit dbmeta(cdf::tables &t) : m_pool{t}, m_t{t} {
     t.visit_tree([&](auto e) {
       if (e->name() != "__Tables")
         return true;

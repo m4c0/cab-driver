@@ -1,9 +1,9 @@
 module;
 #include <array>
 
-export module msi:pods;
+export module cdf:pods;
 
-export namespace msi {
+export namespace cdf {
 using dirid_t = int32_t;
 using secid_t = int32_t;
 
@@ -52,8 +52,8 @@ struct dir_entry {
   uint32_t unused;
 };
 
-} // namespace msi
+} // namespace cdf
 
-static_assert(sizeof(msi::secid_t) == 4);
-static_assert(sizeof(msi::dir_entry) == 128);
-static_assert(sizeof(msi::header) == 512);
+static_assert(sizeof(cdf::secid_t) == 4);
+static_assert(sizeof(cdf::dir_entry) == 128);
+static_assert(sizeof(cdf::header) == 512);

@@ -5,13 +5,16 @@ using namespace ecow;
 int main(int argc, char **argv) {
   seq all{"all"};
 
+  auto cdf = all.add_unit<mod>("cdf");
+  cdf->add_part("pods");
+  cdf->add_part("reader");
+  cdf->add_part("treenode");
+  cdf->add_part("tables");
+
   auto m = all.add_unit<mod>("msi");
-  m->add_part("pods");
-  m->add_part("reader");
-  m->add_part("treenode");
-  m->add_part("tables");
   m->add_part("strpool");
   m->add_part("dbmeta");
+  m->add_ref(cdf);
 
   auto e = all.add_unit<exe>("msi-dump");
   e->add_ref(m);
