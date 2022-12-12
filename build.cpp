@@ -15,6 +15,7 @@ int main(int argc, char **argv) {
   m->add_part("name");
   m->add_part("strpool");
   m->add_part("dbmeta");
+  m->add_part("objects");
   m->add_ref(cdf);
 
   auto e = all.add_unit<exe>("msi-dump");

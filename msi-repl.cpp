@@ -92,24 +92,17 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
   } else if (cmd == "test") {
     msi::dbmeta m{t};
 
-    struct dir {
-      unsigned parent;
-      unsigned name;
-    };
-    std::map<unsigned, dir> dirs;
-    for (auto d : m.table("Directory")) {
-      // TODO: map to column names
-      dirs[d.at("Directory").data] = {d.at("Directory_Parent").data,
-                                      d.at("DefaultDir").data};
+    auto dirs = msi::read_directories(m);
+    for (auto &[k, v] : dirs) {
+      res << v << "\n";
     }
 
     for (auto f : m.table("File")) {
-      // TODO: map to column names
       auto fn = *m.string(f.at("FileName").data);
       if (fn.size() > 12)
         fn = fn.substr(13);
 
-      res << fn << "\n";
+      // res << fn << "\n";
     }
   } else {
     res << std::setfill('0') << std::hex;
