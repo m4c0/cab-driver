@@ -31,4 +31,6 @@ export auto read(std::streambuf *sb) {
   return tables{sb, h};
 }
 export class tables;
+export class dir_entry;
+export using dir_name_t = decltype(dir_entry{}.name);
 } // namespace cdf

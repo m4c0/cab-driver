@@ -6,6 +6,7 @@ module;
 #include <vector>
 
 export module msi:dbmeta;
+import :name;
 import :strpool;
 import cdf;
 
@@ -34,7 +35,7 @@ export class dbmeta {
 public:
   explicit dbmeta(cdf::tables &t) : m_pool{t}, m_t{t} {
     t.visit_tree([&](auto e) {
-      if (e->name() != "__Tables")
+      if (msi::decode_name(e->entry()) != "__Tables")
         return true;
 
       auto raw = t.read_stream(e->entry());
@@ -51,7 +52,7 @@ public:
     });
 
     t.visit_tree([&](auto e) {
-      if (e->name() != "__Columns")
+      if (msi::decode_name(e->entry()) != "__Columns")
         return true;
 
       constexpr const auto row_size = sizeof(uint16_t) * 4;
@@ -133,7 +134,7 @@ public:
     std::vector<std::vector<column>> data;
 
     m_t.visit_tree([&](auto e) {
-      if (e->name() != kfn)
+      if (msi::decode_name(e->entry()) != kfn)
         return true;
 
       auto raw = m_t.read_stream(e->entry());

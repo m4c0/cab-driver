@@ -7,6 +7,7 @@ module;
 
 export module msi:strpool;
 
+import :name;
 import cdf;
 
 namespace msi {
@@ -22,13 +23,13 @@ public:
   explicit strpool(cdf::tables &t) {
     std::vector<uint8_t> data;
     t.visit_tree([&](auto e) {
-      if (e->name() != "__StringData")
+      if (msi::decode_name(e->entry()) != "__StringData")
         return true;
       data = t.read_stream(e->entry());
       return false;
     });
     t.visit_tree([&](auto e) {
-      if (e->name() != "__StringPool")
+      if (msi::decode_name(e->entry()) != "__StringPool")
         return true;
 
       auto raw = t.read_stream(e->entry());

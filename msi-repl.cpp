@@ -22,7 +22,7 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
   if (cmd == "list") {
     t.visit_tree([&](auto e) {
       const auto &b = e->entry();
-      res << e->name() << " -- size:" << b.stream_size << "\n";
+      res << msi::decode_name(b) << " -- size:" << b.stream_size << "\n";
       return true;
     });
   } else if (cmd == "strings") {
@@ -109,7 +109,7 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
   } else {
     res << std::setfill('0') << std::hex;
     t.visit_tree([&](auto e) {
-      if (e->name() != cmd)
+      if (msi::decode_name(e->entry()) != cmd)
         return true;
 
       unsigned i = 0;

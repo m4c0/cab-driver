@@ -6,6 +6,7 @@
 #include <string_view>
 
 import cdf;
+import msi;
 
 using guid = std::array<uint8_t, 16>;
 struct pset_str {
@@ -41,13 +42,13 @@ void try_main(int argc, char **argv) {
   auto t = cdf::read(f.rdbuf());
   t.visit_tree([&](auto e) {
     const auto &b = e->entry();
-    std::cout << e->name() << ":" << e->name().size()
-              << " secid:" << b.secid_first << " sz:" << b.stream_size << "\n";
+    std::cout << msi::decode_name(b) << " secid:" << b.secid_first
+              << " sz:" << b.stream_size << "\n";
     return true;
   });
 
   t.visit_tree([&](auto e) {
-    if (e->name() == "<05>SummaryInformation") {
+    if (e->entry().name == cdf::dir_name_t{u"\5SummaryInformation"}) {
       auto buf = t.read_stream(e->entry());
 
       constexpr const guid fmtid_summary_information = {

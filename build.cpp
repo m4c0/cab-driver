@@ -12,6 +12,7 @@ int main(int argc, char **argv) {
   cdf->add_part("tables");
 
   auto m = all.add_unit<mod>("msi");
+  m->add_part("name");
   m->add_part("strpool");
   m->add_part("dbmeta");
   m->add_ref(cdf);
