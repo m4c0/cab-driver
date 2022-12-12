@@ -76,7 +76,8 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
     res << "\n";
 
     for (const auto &row : m.table(fn)) {
-      for (const auto &col : row) {
+      for (const auto &c : cols) {
+        const auto col = row.at(c.name);
         if (col.string) {
           auto str = m.string(col.data);
           if (str)
@@ -98,12 +99,13 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
     std::map<unsigned, dir> dirs;
     for (auto d : m.table("Directory")) {
       // TODO: map to column names
-      dirs[d[0].data] = {d[1].data, d[2].data};
+      dirs[d.at("Directory").data] = {d.at("Directory_Parent").data,
+                                      d.at("DefaultDir").data};
     }
 
     for (auto f : m.table("File")) {
       // TODO: map to column names
-      auto fn = *m.string(f[2].data);
+      auto fn = *m.string(f.at("FileName").data);
       if (fn.size() > 12)
         fn = fn.substr(13);
 
