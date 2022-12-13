@@ -65,10 +65,6 @@ header read_header(std::streambuf *f) {
     throw std::runtime_error("Sets are not supported");
   }
 
-  std::cout << "Cabinet size: " << hdr.cab_size << "\n";
-  std::cout << "Folder count: " << hdr.num_folders << "\n";
-  std::cout << "File count: " << hdr.num_files << "\n";
-
   return hdr;
 }
 folder read_next_folder(std::streambuf *f, const header &hdr) {
@@ -80,10 +76,6 @@ folder read_next_folder(std::streambuf *f, const header &hdr) {
     throw std::runtime_error("Unsupported compression type");
 
   f->pubseekoff(hdr.folder_extra, std::ios::cur);
-
-  std::cout << "  Block count: " << fld.num_data << "\n";
-  std::cout << "  Compress type: " << (fld.compress == 1 ? "MSZIP" : "NONE")
-            << "\n";
 
   return fld;
 }
@@ -100,25 +92,33 @@ file read_next_file(std::streambuf *f, const header &hdr) {
   while ((c = f->sbumpc()) != '\0')
     fl.name += c;
 
-  std::cout << "  Name: " << fl.name << "\n";
-  std::cout << "  Size: " << fl.unc_size << "\n";
-  std::cout << "  Date/Time: " << std::hex << fl.date << fl.time << std::dec
-            << "\n";
-
   return fl;
 }
 
 void read(std::streambuf *f) {
   auto hdr = read_header(f);
+  std::cout << "Cabinet size: " << hdr.cab_size << "\n";
+  std::cout << "Folder count: " << hdr.num_folders << "\n";
+  std::cout << "File count: " << hdr.num_files << "\n";
+
   for (auto i = 0U; i < hdr.num_folders; i++) {
     std::cout << "Folder " << (i + 1) << ":\n";
     auto fld = read_next_folder(f, hdr);
+
+    std::cout << "  Block count: " << fld.num_data << "\n";
+    std::cout << "  Compress type: " << (fld.compress == 1 ? "MSZIP" : "NONE")
+              << "\n";
   }
 
   f->pubseekpos(hdr.ofs_first_file);
   for (auto i = 0U; i < hdr.num_files; i++) {
     std::cout << "File " << (i + 1) << ":\n";
     auto fl = read_next_file(f, hdr);
+
+    std::cout << "  Name: " << fl.name << "\n";
+    std::cout << "  Size: " << fl.unc_size << "\n";
+    std::cout << "  Date/Time: " << std::hex << fl.date << fl.time << std::dec
+              << "\n";
   }
 }
 
