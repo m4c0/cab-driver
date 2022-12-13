@@ -20,10 +20,21 @@ struct header {
   uint8_t folder_extra;
   uint8_t data_extra;
 };
-struct folder {
+struct data_meta {
+  uint32_t checksum;
+  uint16_t comp_size;
+  uint16_t uncomp_size;
+};
+struct data : data_meta {
+  std::vector<uint8_t> compressed{};
+};
+struct folder_data {
   uint32_t ofs_first_data;
   uint16_t num_data;
   uint16_t compress;
+};
+struct folder : folder_data {
+  std::vector<data> datas{};
 };
 struct file_data {
   uint32_t unc_size;
@@ -36,13 +47,11 @@ struct file_data {
 struct file : file_data {
   std::string name;
 };
-struct data_meta {
-  uint32_t checksum;
-  uint16_t comp_size;
-  uint16_t uncomp_size;
-};
-struct data : data_meta {
-  std::vector<uint8_t> compressed;
+
+struct cab {
+  header hdr;
+  std::vector<folder> folders;
+  std::vector<file> files;
 };
 
 header read_header(std::streambuf *f) {
@@ -77,7 +86,7 @@ header read_header(std::streambuf *f) {
 }
 folder read_next_folder(std::streambuf *f, const header &hdr) {
   folder fld;
-  if (!f->sgetn((char *)&fld, sizeof(fld)))
+  if (!f->sgetn((char *)&fld, sizeof(folder_data)))
     throw std::runtime_error("Failed to read folder");
 
   if (fld.compress > 1)
@@ -116,34 +125,48 @@ data read_next_data(std::streambuf *f, const header &hdr) {
   return d;
 }
 
-void read(std::streambuf *f) {
-  auto hdr = read_header(f);
-  std::cout << "Cabinet size: " << hdr.cab_size << "\n";
-  std::cout << "Folder count: " << hdr.num_folders << "\n";
-  std::cout << "File count: " << hdr.num_files << "\n";
+cab read(std::streambuf *f) {
+  cab res;
+  auto &hdr = res.hdr = read_header(f);
 
   for (auto i = 0U; i < hdr.num_folders; i++) {
-    std::cout << "Folder " << (i + 1) << ":\n";
-    auto fld = read_next_folder(f, hdr);
-
-    std::cout << "  Block count: " << fld.num_data << "\n";
-    std::cout << "  Compress type: " << (fld.compress == 1 ? "MSZIP" : "NONE")
-              << "\n";
+    auto &fld = res.folders.emplace_back(read_next_folder(f, hdr));
 
     f->pubseekpos(fld.ofs_first_data, std::ios::cur);
     for (auto j = 0U; j < fld.num_data; j++) {
-      auto dt = read_next_data(f, hdr);
-      std::cout << "  Data " << (j + 1) << "\n";
-      std::cout << "    Compressed size: " << dt.comp_size << "\n";
-      std::cout << "    Uncompressed size: " << dt.uncomp_size << "\n";
+      fld.datas.emplace_back(read_next_data(f, hdr));
     }
   }
 
   f->pubseekpos(hdr.ofs_first_file);
   for (auto i = 0U; i < hdr.num_files; i++) {
-    std::cout << "File " << (i + 1) << ":\n";
-    auto fl = read_next_file(f, hdr);
+    res.files.emplace_back(read_next_file(f, hdr));
+  }
 
+  return res;
+}
+
+void dump(const cab &c) {
+  const auto &hdr = c.hdr;
+  std::cout << "Cabinet size: " << hdr.cab_size << "\n";
+
+  for (auto i = 0U; i < hdr.num_folders; i++) {
+    const auto &fld = c.folders[i];
+    std::cout << "Folder " << (i + 1) << ":\n";
+    std::cout << "  Compress type: " << (fld.compress == 1 ? "MSZIP" : "NONE")
+              << "\n";
+
+    for (auto j = 0U; j < fld.num_data; j++) {
+      const auto &dt = fld.datas[j];
+      std::cout << "  Data " << (j + 1) << ":\n";
+      std::cout << "    Compressed size: " << dt.comp_size << "\n";
+      std::cout << "    Uncompressed size: " << dt.uncomp_size << "\n";
+    }
+  }
+
+  for (auto i = 0U; i < hdr.num_files; i++) {
+    const auto &fl = c.files[i];
+    std::cout << "File " << (i + 1) << ":\n";
     std::cout << "  Name: " << fl.name << "\n";
     std::cout << "  Size: " << fl.unc_size << "\n";
     std::cout << "  Date/Time: " << std::hex << fl.date << fl.time << std::dec
@@ -159,7 +182,7 @@ void try_main(int argc, char **argv) {
   if (!f)
     throw std::runtime_error("Could not open input file");
 
-  read(f.rdbuf());
+  dump(read(f.rdbuf()));
 }
 
 int main(int argc, char **argv) {
