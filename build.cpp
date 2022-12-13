@@ -11,6 +11,10 @@ int main(int argc, char **argv) {
   cdf->add_part("treenode");
   cdf->add_part("tables");
 
+  auto cab = all.add_unit<mod>("cab");
+  cab->add_part("pods");
+  cab->add_part("reader");
+
   auto m = all.add_unit<mod>("msi");
   m->add_part("name");
   m->add_part("strpool");
@@ -28,6 +32,7 @@ int main(int argc, char **argv) {
 
   auto cabl = all.add_unit<exe>("cab-list");
   cabl->add_unit<>("cab-list");
+  cabl->add_ref(cab);
 
   return run_main(all, argc, argv);
 }
