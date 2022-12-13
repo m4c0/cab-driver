@@ -36,6 +36,14 @@ struct file_data {
 struct file : file_data {
   std::string name;
 };
+struct data_meta {
+  uint32_t checksum;
+  uint16_t comp_size;
+  uint16_t uncomp_size;
+};
+struct data : data_meta {
+  std::vector<uint8_t> compressed;
+};
 
 header read_header(std::streambuf *f) {
   header hdr;
@@ -94,6 +102,19 @@ file read_next_file(std::streambuf *f, const header &hdr) {
 
   return fl;
 }
+data read_next_data(std::streambuf *f, const header &hdr) {
+  data d;
+  if (!f->sgetn((char *)&d, sizeof(data_meta)))
+    throw std::runtime_error("Failed to read data");
+
+  f->pubseekoff(hdr.data_extra, std::ios::cur);
+
+  d.compressed.resize(d.comp_size);
+  if (!f->sgetn((char *)d.compressed.data(), d.compressed.size()))
+    throw std::runtime_error("Failed to read compressed data");
+
+  return d;
+}
 
 void read(std::streambuf *f) {
   auto hdr = read_header(f);
@@ -108,6 +129,14 @@ void read(std::streambuf *f) {
     std::cout << "  Block count: " << fld.num_data << "\n";
     std::cout << "  Compress type: " << (fld.compress == 1 ? "MSZIP" : "NONE")
               << "\n";
+
+    f->pubseekpos(fld.ofs_first_data, std::ios::cur);
+    for (auto j = 0U; j < fld.num_data; j++) {
+      auto dt = read_next_data(f, hdr);
+      std::cout << "  Data " << (j + 1) << "\n";
+      std::cout << "    Compressed size: " << dt.comp_size << "\n";
+      std::cout << "    Uncompressed size: " << dt.uncomp_size << "\n";
+    }
   }
 
   f->pubseekpos(hdr.ofs_first_file);
