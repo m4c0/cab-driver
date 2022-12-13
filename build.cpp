@@ -26,5 +26,8 @@ int main(int argc, char **argv) {
   repl->add_ref(m);
   repl->add_unit<>("msi-repl");
 
+  auto cabl = all.add_unit<exe>("cab-list");
+  cabl->add_unit<>("cab-list");
+
   return run_main(all, argc, argv);
 }
