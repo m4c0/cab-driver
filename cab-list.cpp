@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <string>
 
 struct header {
   uint32_t signature;
@@ -18,6 +19,22 @@ struct header {
   uint16_t header_extra;
   uint8_t folder_extra;
   uint8_t data_extra;
+};
+struct folder {
+  uint32_t ofs_first_data;
+  uint16_t num_data;
+  uint16_t compress;
+};
+struct file_data {
+  uint32_t unc_size;
+  uint32_t unc_offset;
+  uint16_t folder;
+  uint16_t date;
+  uint16_t time;
+  uint16_t attribs;
+};
+struct file : file_data {
+  std::string name;
 };
 
 header read_header(std::streambuf *f) {
@@ -54,8 +71,56 @@ header read_header(std::streambuf *f) {
 
   return hdr;
 }
+folder read_next_folder(std::streambuf *f, const header &hdr) {
+  folder fld;
+  if (!f->sgetn((char *)&fld, sizeof(fld)))
+    throw std::runtime_error("Failed to read folder");
 
-void read(std::streambuf *f) { auto h = read_header(f); }
+  if (fld.compress > 1)
+    throw std::runtime_error("Unsupported compression type");
+
+  f->pubseekoff(hdr.folder_extra, std::ios::cur);
+
+  std::cout << "  Block count: " << fld.num_data << "\n";
+  std::cout << "  Compress type: " << (fld.compress == 1 ? "MSZIP" : "NONE")
+            << "\n";
+
+  return fld;
+}
+file read_next_file(std::streambuf *f, const header &hdr) {
+  file fl;
+  if (!f->sgetn((char *)&fl, sizeof(file_data)))
+    throw std::runtime_error("Failed to read file");
+
+  if (fl.folder >= hdr.num_folders)
+    throw std::runtime_error("Invalid folder");
+
+  char c;
+  fl.name = "";
+  while ((c = f->sbumpc()) != '\0')
+    fl.name += c;
+
+  std::cout << "  Name: " << fl.name << "\n";
+  std::cout << "  Size: " << fl.unc_size << "\n";
+  std::cout << "  Date/Time: " << std::hex << fl.date << fl.time << std::dec
+            << "\n";
+
+  return fl;
+}
+
+void read(std::streambuf *f) {
+  auto hdr = read_header(f);
+  for (auto i = 0U; i < hdr.num_folders; i++) {
+    std::cout << "Folder " << (i + 1) << ":\n";
+    auto fld = read_next_folder(f, hdr);
+  }
+
+  f->pubseekpos(hdr.ofs_first_file);
+  for (auto i = 0U; i < hdr.num_files; i++) {
+    std::cout << "File " << (i + 1) << ":\n";
+    auto fl = read_next_file(f, hdr);
+  }
+}
 
 void try_main(int argc, char **argv) {
   if (argc != 2)
