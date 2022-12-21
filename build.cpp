@@ -1,3 +1,5 @@
+#include "../yoyo/build.hpp"
+#include "../zipline/build.hpp"
 #include "ecow.hpp"
 
 using namespace ecow;
@@ -14,6 +16,9 @@ int main(int argc, char **argv) {
   auto cab = all.add_unit<mod>("cab");
   cab->add_part("pods");
   cab->add_part("reader");
+  cab->add_part("deflater");
+  cab->add_wsdep("zipline", zipline());
+  cab->add_wsdep("yoyo", yoyo());
 
   auto m = all.add_unit<mod>("msi");
   m->add_part("name");
@@ -33,6 +38,10 @@ int main(int argc, char **argv) {
   auto cabl = all.add_unit<exe>("cab-list");
   cabl->add_unit<>("cab-list");
   cabl->add_ref(cab);
+
+  auto cabx = all.add_unit<exe>("cab-xt");
+  cabx->add_unit<>("cab-xt");
+  cabx->add_ref(cab);
 
   return run_main(all, argc, argv);
 }
