@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <string>
 
 import cab;
@@ -15,11 +16,18 @@ void dump(const cab::cab &c) {
     std::cout << "  Compress type: " << (fld.compress == 1 ? "MSZIP" : "NONE")
               << "\n";
 
+    cab::folder_deflater def{fld};
     for (auto j = 0U; j < fld.num_data; j++) {
       const auto &dt = fld.datas[j];
       std::cout << "  Data " << (j + 1) << ":\n";
       std::cout << "    Compressed size: " << dt.comp_size << "\n";
       std::cout << "    Uncompressed size: " << dt.uncomp_size << "\n";
+
+      for (auto k = 0U; k < dt.uncomp_size; k++) {
+        if (!def.next())
+          throw std::runtime_error(
+              "Uncompressed data is smaller than expected");
+      }
     }
   }
 
