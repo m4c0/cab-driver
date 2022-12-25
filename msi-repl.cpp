@@ -92,7 +92,7 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
   } else if (cmd == "test") {
     msi::dbmeta m{t};
     for (auto &[k, v] : msi::read_files(m)) {
-      res << v << "\n";
+      res << *m.string(k) << " " << v << "\n";
     }
   } else {
     res << std::setfill('0') << std::hex;
