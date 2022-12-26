@@ -7,6 +7,7 @@ module;
 #include <vector>
 
 export module msi:dbmeta;
+import :cell;
 import :name;
 import :strpool;
 import cdf;
@@ -128,11 +129,7 @@ public:
         row_incr = row_size;
     }
 
-    struct column {
-      unsigned data;
-      bool string;
-    };
-    using row_t = std::map<std::string_view, column>;
+    using row_t = std::map<std::string_view, cell>;
     std::vector<row_t> data;
 
     m_t.visit_tree([&](auto e) {
@@ -148,23 +145,8 @@ public:
 
         const auto ri = row_incr * i;
         for (const auto &c : cp) {
-          auto &d = row[c.col.name];
           auto *ptr = raw.data() + c.offset * row_count + ri;
-          switch (c.col.meta.s.type) {
-          case 1:
-            d.data = *(uint32_t *)ptr & 0x7FFFFFFFU;
-            break;
-          case 5:
-            d.data = *(uint16_t *)ptr & 0x7FFFU;
-            break;
-          case 13:
-          case 15:
-            d.data = *(uint16_t *)ptr;
-            d.string = true;
-            break;
-          default:
-            break;
-          }
+          row[c.col.name] = cell{c.col.meta.s.type, ptr};
         }
 
         data.push_back(row);

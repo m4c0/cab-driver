@@ -78,12 +78,12 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
     for (const auto &row : m.table(fn)) {
       for (const auto &c : cols) {
         const auto col = row.at(c.name);
-        if (col.string) {
-          auto str = m.string(col.data);
+        if (col.is_string()) {
+          auto str = m.string(*col);
           if (str)
             res << *str;
         } else {
-          res << col.data;
+          res << *col;
         }
         res << "\t";
       }

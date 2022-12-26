@@ -37,11 +37,11 @@ export [[nodiscard]] auto read_directories(msi::dbmeta &m) {
 
   std::map<unsigned, raw_dir> cache;
   for (const auto &d : tbl) {
-    const auto id = d.at("Directory").data;
-    const auto parent = d.at("Directory_Parent").data;
-    const auto name = d.at("DefaultDir").data;
+    const auto id = d.at("Directory");
+    const auto parent = d.at("Directory_Parent");
+    const auto name = d.at("DefaultDir");
 
-    cache.emplace(id, raw_dir{parent, name});
+    cache.emplace(*id, raw_dir{*parent, *name});
   }
 
   std::map<unsigned, std::filesystem::path> res;
@@ -57,20 +57,20 @@ export [[nodiscard]] auto read_files(msi::dbmeta &m) {
 
   std::map<unsigned, std::filesystem::path> comps;
   for (auto c : m.table("Component")) {
-    const auto id = c.at("Component").data;
-    const auto dir = c.at("Directory_").data;
-    comps.emplace(id, dirs[dir]);
+    const auto id = c.at("Component");
+    const auto dir = c.at("Directory_");
+    comps.emplace(*id, dirs[*dir]);
   }
 
   std::map<unsigned, std::filesystem::path> res;
   for (auto f : m.table("File")) {
-    const auto id = f.at("File").data;
-    const auto cmp = f.at("Component_").data;
-    const auto fn = f.at("FileName").data;
+    const auto id = f.at("File");
+    const auto cmp = f.at("Component_");
+    const auto fn = f.at("FileName");
 
-    const auto path = comps[cmp];
-    const auto fname = strip_long_path(*m.string(fn));
-    res.emplace(id, path / fname);
+    const auto path = comps[*cmp];
+    const auto fname = strip_long_path(*m.string(*fn));
+    res.emplace(*id, path / fname);
   }
   return res;
 }

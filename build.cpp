@@ -23,6 +23,7 @@ int main(int argc, char **argv) {
   auto m = all.add_unit<mod>("msi");
   m->add_part("name");
   m->add_part("strpool");
+  m->add_part("cell");
   m->add_part("dbmeta");
   m->add_part("objects");
   m->add_ref(cdf);
