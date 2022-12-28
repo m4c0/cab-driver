@@ -73,7 +73,7 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
     for (const auto &c : cols) {
       res << c.name << "\t";
     }
-    res << "\n";
+    res << "\n" << std::hex;
 
     for (const auto &row : m.table(fn)) {
       for (const auto &c : cols) {

@@ -8,8 +8,8 @@ import :dbmeta;
 
 namespace msi {
 struct raw_dir {
-  unsigned parent;
-  unsigned name;
+  signed parent;
+  signed name;
 };
 
 auto strip_long_path(std::string_view v) {

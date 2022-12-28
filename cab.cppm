@@ -36,7 +36,7 @@ export void extract(std::ostream &out, const cab &c, const std::string &fn) {
     auto n = fdef.next();
     if (!n)
       throw std::runtime_error("Failed to read stuff");
-    out << (char)*n;
+    out.put((char)*n);
   }
 }
 export void extract(std::ostream &out, std::streambuf *rdbuf,
