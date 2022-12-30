@@ -26,6 +26,7 @@ int main(int argc, char **argv) {
   m->add_part("cell");
   m->add_part("dbmeta");
   m->add_part("objects");
+  m->add_ref(cab);
   m->add_ref(cdf);
 
   auto e = all.add_unit<exe>("msi-dump");

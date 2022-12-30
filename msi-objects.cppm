@@ -1,6 +1,8 @@
 module;
 #include <filesystem>
+#include <iostream>
 #include <map>
+#include <set>
 #include <string>
 
 export module msi:objects;
@@ -71,6 +73,19 @@ export [[nodiscard]] auto read_files(msi::dbmeta &m) {
     const auto path = comps[*cmp];
     const auto fname = strip_long_path(*m.string(*fn));
     res.emplace(*id, path / fname);
+  }
+  return res;
+}
+
+export [[nodiscard]] auto read_medias(msi::dbmeta &m,
+                                      const std::filesystem::path &base) {
+  std::set<std::filesystem::path> res;
+  for (auto mm : m.table("Media")) {
+    auto cab = *mm.at("Cabinet");
+    if (cab == 0)
+      continue;
+
+    res.insert(base / *m.string(cab));
   }
   return res;
 }

@@ -3,12 +3,14 @@
 #include <iostream>
 #include <map>
 #include <optional>
+#include <set>
 #include <span>
 #include <sstream>
 #include <string>
 #include <string_view>
 #include <unistd.h>
 
+import cab;
 import cdf;
 import msi;
 
@@ -19,7 +21,8 @@ std::optional<std::string> read_cmd() {
   return std::getline(std::cin, res) ? std::optional{res} : std::nullopt;
 }
 
-std::string eval_cmd(auto &t, const std::string &cmd) {
+std::string eval_cmd(auto &t, std::filesystem::path in_file,
+                     const std::string &cmd) {
   std::stringstream res;
   if (cmd == "list") {
     t.visit_tree([&](auto e) {
@@ -89,10 +92,40 @@ std::string eval_cmd(auto &t, const std::string &cmd) {
       }
       res << "\n";
     }
-  } else if (cmd == "test") {
+  } else if (cmd == "ls") {
     msi::dbmeta m{t};
     for (auto &[k, v] : msi::read_files(m)) {
-      res << *m.string(k) << " " << v << "\n";
+      res << v.string() << "\n";
+    }
+  } else if (cmd == "xt") {
+    msi::dbmeta m{t};
+    std::map<std::string, std::filesystem::path> files;
+    for (auto &[k, v] : msi::read_files(m)) {
+      files.emplace(*m.string(k), v);
+    }
+    const auto dir = in_file.parent_path();
+    for (auto md : msi::read_medias(m, dir)) {
+      std::cout << md.string() << "\n";
+
+      std::ifstream f{md};
+      if (!f)
+        throw std::runtime_error("Could not open cab");
+
+      for (const auto &[fid, path] : files) {
+        std::cout << "  " << path.string() << "\n";
+        std::filesystem::create_directories(path.parent_path());
+
+        std::ofstream o{path};
+        if (!o)
+          throw std::runtime_error("Could not open output file");
+
+        try {
+          cab::extract(o, f.rdbuf(), fid);
+          files.erase(fid);
+          break;
+        } catch (...) {
+        }
+      }
     }
   } else {
     res << std::setfill('0') << std::hex;
@@ -134,7 +167,7 @@ void try_main(int argc, char **argv) {
   auto t = cdf::read(f.rdbuf());
 
   while (auto cmd = read_cmd()) {
-    print_result(eval_cmd(t, *cmd));
+    print_result(eval_cmd(t, argv[1], *cmd));
   }
 }
 
