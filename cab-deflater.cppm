@@ -6,9 +6,8 @@ module;
 
 export module cab:deflater;
 import :pods;
-import bitstream;
-import deflate;
 import yoyo;
+import zipline;
 
 namespace cab {
 export class folder_deflater {

@@ -1,3 +1,4 @@
+#pragma leco tool
 #include <cstdint>
 #include <fstream>
 #include <iostream>

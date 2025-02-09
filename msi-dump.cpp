@@ -1,3 +1,4 @@
+#pragma leco tool
 #include <array>
 #include <fstream>
 #include <iostream>

@@ -1,3 +1,4 @@
+#pragma leco tool
 #include <fstream>
 #include <iostream>
 #include <optional>
